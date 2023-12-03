@@ -1,0 +1,34 @@
+version: '3.5'
+services:
+  database:
+    container_name: postgres
+    build:
+      dockerfile: ./database/Dockerfile
+    env_file: database.conf
+    ports:
+      - 5432:5432
+    volumes:
+      - db_volume:/var/lib/postgresql
+      
+  server:
+    depends_on:
+      - database
+    container_name: flask
+    build:
+      dockerfile: ./app/Dockerfile
+    env_file: database.conf
+    ports:
+      - 30006:30006
+  
+  scraper:
+    depends_on:
+      - server
+    container_name: scrapy
+    build:
+      dockerfile: ./scraper/Dockerfile
+    env_file: database.conf
+    ports:
+      - 30000:30000
+
+volumes:
+  db_volume:
