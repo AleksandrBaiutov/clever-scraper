@@ -15,5 +15,4 @@ WORKDIR mycode
 
 RUN . /venv/bin/activate && python3 --version && python3 -m pip install --upgrade pip setuptools wheel build nano && \
     pip install -r /mycode/requirements.txt && export $(xargs < database.conf) && export FLASK_APP=/mycode/app.py
-    
-CMD . /venv/bin/activate && scrapy crawl clever
+CMD sleep 20 && . /venv/bin/activate && scrapy crawl clever

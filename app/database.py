@@ -1,5 +1,22 @@
 from models import db
+from sqlalchemy import desc
 
+
+def get_all_filtered(model, age=None, availability=False, sort_type=None):
+    data = model.query
+
+    if availability:
+        data = data.filter(model.available == True)
+
+    if age:
+        data = data.filter(model.min_age <= age)
+
+    if sort_type == 'rating':
+        data = data.order_by(desc(model.rating), desc(model.review_number))
+    elif sort_type == 'reviews':
+        data = data.order_by(desc(model.review_number), desc(model.rating))
+
+    return data
 
 def get_all(model):
     data = model.query.all()

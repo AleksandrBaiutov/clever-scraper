@@ -8,20 +8,25 @@ class CleverSpider(scrapy.Spider):
     def parse(self, response):
         for link in response.css('div.card-mini__title a::attr(href)'):
             yield response.follow(link, callback=self.parse_book)
-        for i in range(2, 3):
+        for i in range(2, 101):
             next_page = f'https://www.clever-media.ru/books/?PAGEN_1={i}/'
             yield response.follow(next_page, callback=self.parse)
 
-    def parse_book(self, response):
+    def get_name(self, response):
         name = response.css('h1.item__heading::text').get()
         if name[-1] != '"' or name[0] != '"':
             name = '"' + name + '"'
+        return name
 
+    def get_author(self, response):
         try:
             author = response.css('div.item__params-value a::text')[1].get()
         except:
             author = '-'
+        return author
 
+
+    def get_raiting(self, response):
         rating = 0
         review_number = 1
         for i in range(1, 100):
@@ -34,11 +39,16 @@ class CleverSpider(scrapy.Spider):
             avg_rating = 0
         else:
             avg_rating = rating / review_number
+        return avg_rating, review_number
 
+    def get_avaiability(self, response):
         available = False
         if response.css('div.item__order-btn-wrapper button::text').get().strip() == "В корзину":
             available = True
+        return available
 
+
+    def get_min_age(self, response):
         min_age = 0
         for i in range(15):
             try:
@@ -46,7 +56,11 @@ class CleverSpider(scrapy.Spider):
                     min_age = response.css('div.item__params-value::text')[i].get()[:-1]
             except:
                 break
+        if min_age != 0 and not(min_age.isdigit()):
+            min_age = 0
+        return min_age
 
+    def get_ISBN(self, response):
         ISBN = ""
         for i in range(15):
             try:
@@ -54,6 +68,14 @@ class CleverSpider(scrapy.Spider):
                     ISBN = response.css('div.params__line div::text')[i].get().replace('-', '')
             except:
                 break
+        return ISBN
+    def parse_book(self, response):
+        name = self.get_name(response)
+        author = self.get_author(response)
+        avg_rating, review_number = self.get_raiting(response)
+        available = self.get_avaiability(response)
+        min_age = self.get_min_age(response)
+        ISBN = self.get_ISBN(response)
 
         yield {
             'name' : name,
@@ -67,25 +89,3 @@ class CleverSpider(scrapy.Spider):
             'ISBN' : ISBN,
             'link' : response.url,
         }
-
-
-
-# response.css('a::attr(data-name)').get() имя книги с главной страницы
-# response.css('div.card-mini__title a::attr(href)').get() дополнение к ссылке для перехода к конкретной книге к главной
-# response.css('span.card-mini__author-name a::text').get()  автор с главной
-# response.css('p.card-mini__price-value::text').get() цена с главной
-# response.css('p.card-mini__discount.badge.badge--discount::text').get() скидка с главной
-# response.css('span.card-mini__age::text').get() возрастное ограничение с главной
-
-# response.css('div.params__value::text')[0].get() возрастное ограничение со страницы книги (может не быть)
-# response.css('h1.item__heading::text').get() название
-# response.css('div.item__params-value a::text')[1].get() автор (может не быть)
-# response.css('div.item__actual-price span::text').get() цена
-# response.css('span.badge.badge--discount::text').get()[16:-1] скидка (может не быть, наверное)
-# response.css('div.params__value::text')[1].get() кол-во страниц
-# response.css('div.params__value::text')[3].get() вес
-# response.css('div.params__value::text')[5].get() тип обложки
-# response.css('div.params__value a::text').get() серия
-
-# response.css('div.rating.review__rating p::text')[1]  отзыв
-# response.css('div.item__order-btn-wrapper button::text').get().strip() есть ли в наличии, если есть - "В корзину"
